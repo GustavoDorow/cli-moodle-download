@@ -6,10 +6,12 @@ import os
 import sys
 from pathlib import Path
 
+import questionary
 from dotenv import load_dotenv
 
 from .client import MoodleClient
 from .errors import MoodleDownloadError, SectionNotFoundError
+from .models import DownloadReport
 from .parser import list_sections
 
 
@@ -19,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Baixa os arquivos de uma seção de um curso Moodle.",
     )
     parser.add_argument("course_url", help="URL da página do curso")
-    selection = parser.add_mutually_exclusive_group(required=True)
+    selection = parser.add_mutually_exclusive_group()
     selection.add_argument(
         "--section",
         "-s",
@@ -79,28 +81,58 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  - {section}")
             return 0
 
-        print(f'Procurando a seção "{args.section}"…')
-        title, report = client.download_section(
-            args.course_url,
-            course_html,
-            args.section,
-            args.output.expanduser().resolve(),
-            overwrite=args.overwrite,
-        )
+        if args.section:
+            selected_sections = [args.section]
+        else:
+            sections = list_sections(course_html)
+            if not sections:
+                raise SectionNotFoundError("Nenhuma seção foi encontrada no curso.")
+            selected_sections = choose_sections(sections)
+            if not selected_sections:
+                print("Nenhuma seção selecionada.")
+                return 0
+
+        total_files = 0
+        total_skipped = 0
+        for selected_section in selected_sections:
+            print(f'Procurando a seção "{selected_section}"…')
+            title, report = client.download_section(
+                args.course_url,
+                course_html,
+                selected_section,
+                args.output.expanduser().resolve(),
+                overwrite=args.overwrite,
+            )
+            print_report(title, report)
+            total_files += len(report.files)
+            total_skipped += len(report.skipped)
     except MoodleDownloadError as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 1
 
+    print(
+        f"\nConcluído: {total_files} arquivo(s) baixado(s), "
+        f"{total_skipped} atividade(s) ignorada(s), "
+        f"{len(selected_sections)} seção(ões) processada(s)."
+    )
+    return 0
+
+
+def choose_sections(sections: list[str]) -> list[str]:
+    answer = questionary.checkbox(
+        "Selecione as seções para baixar:",
+        choices=sections,
+        instruction="(↑/↓ navegar, Espaço marcar, Enter confirmar)",
+    ).ask()
+    return list(answer) if answer else []
+
+
+def print_report(title: str, report: DownloadReport) -> None:
     print(f"\n{title}")
     for downloaded in report.files:
         print(f"  ✓ {downloaded.path} ({format_size(downloaded.size)})")
     for skipped in report.skipped:
         print(f"  – {skipped.name}: {skipped.reason}")
-    print(
-        f"\nConcluído: {len(report.files)} arquivo(s) baixado(s), "
-        f"{len(report.skipped)} atividade(s) ignorada(s)."
-    )
-    return 0
 
 
 def format_size(size: int) -> str:

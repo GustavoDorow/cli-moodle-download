@@ -15,15 +15,17 @@ uv sync
 
 ## Uso
 
-Primeiro, liste as seções disponíveis no curso:
+Execute somente o comando com a URL do curso:
 
 ```bash
 uv run moodle-section-dl \
-  'https://presencial.moodle.ufsc.br/course/view.php?id=52983' \
-  --list-sections
+  'https://presencial.moodle.ufsc.br/course/view.php?id=52983'
 ```
 
-Depois, escolha uma seção pelo título completo ou por um trecho único:
+O CLI mostra todas as seções em um seletor interativo. Use `↑/↓` para navegar,
+`Espaço` para marcar uma ou várias seções e `Enter` para confirmar o download.
+
+Para automação sem o seletor, ainda é possível indicar a seção diretamente:
 
 ```bash
 uv run moodle-section-dl \

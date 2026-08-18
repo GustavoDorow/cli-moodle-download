@@ -68,3 +68,45 @@ def test_list_sections_prints_available_titles(tmp_path: Path, monkeypatch, caps
     assert "Seções disponíveis:" in output
     assert "  - Geral" in output
     assert "  - Unidade 3 - Gerência de Memória" in output
+
+
+def test_url_only_opens_interactive_selection(tmp_path: Path, monkeypatch, capsys):
+    (tmp_path / ".env").write_text(
+        "UFSC_USERNAME=usuario_env\nUFSC_PASSWORD=senha_env\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("UFSC_USERNAME", raising=False)
+    monkeypatch.delenv("UFSC_PASSWORD", raising=False)
+    downloaded: list[str] = []
+
+    class FakeClient:
+        def __init__(self, timeout: float):
+            pass
+
+        def login(self, course_url: str, username: str, password: str) -> str:
+            return """
+            <ul class="topics">
+              <li class="section course-section"><h3 class="sectionname">Geral</h3></li>
+              <li class="section course-section"><h3 class="sectionname">Unidade 3</h3></li>
+            </ul>
+            """
+
+        def download_section(
+            self, course_url, course_html, section_name, output_dir, *, overwrite
+        ):
+            downloaded.append(section_name)
+            return section_name, DownloadReport((), ())
+
+    monkeypatch.setattr(cli, "MoodleClient", FakeClient)
+    monkeypatch.setattr(
+        cli,
+        "choose_sections",
+        lambda sections: [sections[1]],
+    )
+
+    result = cli.main(["https://moodle.example/course/view.php?id=1"])
+
+    assert result == 0
+    assert downloaded == ["Unidade 3"]
+    assert "1 seção(ões) processada(s)" in capsys.readouterr().out
