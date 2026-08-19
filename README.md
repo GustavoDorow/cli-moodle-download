@@ -25,11 +25,15 @@ Abra a página principal da disciplina e copie um link neste formato:
 https://presencial.moodle.ufsc.br/course/view.php?id=52983
 ```
 
-Execute:
+Execute o comando inteiro em uma única linha, mantendo somente as aspas duplas
+ao redor do link:
 
-```bash
+```cmd
 uv run moodle-section-dl "https://presencial.moodle.ufsc.br/course/view.php?id=52983"
 ```
+
+Esse mesmo comando funciona no Prompt de Comando do Windows, no PowerShell e
+em terminais Linux e macOS. Não adicione uma barra invertida ao final.
 
 No seletor:
 
