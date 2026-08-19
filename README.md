@@ -17,6 +17,32 @@ cd cli-moodle-download
 uv sync
 ```
 
+### Instalação com pip
+
+Como alternativa ao `uv`, crie e ative um ambiente virtual e instale o projeto
+pelo `requirements.txt`:
+
+```bash
+python -m venv .venv
+```
+
+No Linux ou macOS:
+
+```bash
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+No Windows:
+
+```cmd
+.venv\Scripts\activate
+python -m pip install -r requirements.txt
+```
+
+Depois da instalação, use `moodle-section-dl` no lugar de
+`uv run moodle-section-dl` nos exemplos abaixo.
+
 ## Uso
 
 Abra a página principal da disciplina e copie um link neste formato:
