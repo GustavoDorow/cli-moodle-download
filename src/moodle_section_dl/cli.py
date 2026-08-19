@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import getpass
 import os
 import sys
 from pathlib import Path
 
 import questionary
 from dotenv import load_dotenv
+from prompt_toolkit.layout.processors import PasswordProcessor
 
 from .client import MoodleClient
 from .errors import MoodleDownloadError, SectionNotFoundError
@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv(Path.cwd() / ".env")
     args = build_parser().parse_args(argv)
     username = args.username or input("idUFSC: ").strip()
-    password = os.environ.get("UFSC_PASSWORD") or getpass.getpass("Senha: ")
+    password = os.environ.get("UFSC_PASSWORD") or prompt_password()
     if not username or not password:
         print("erro: usuário e senha são obrigatórios", file=sys.stderr)
         return 2
@@ -125,6 +125,15 @@ def choose_sections(sections: list[str]) -> list[str]:
         instruction="(↑/↓ navegar, Espaço marcar, Enter confirmar)",
     ).ask()
     return list(answer) if answer else []
+
+
+def prompt_password() -> str:
+    """Solicita a senha exibindo uma bolinha para cada caractere digitado."""
+    answer = questionary.text(
+        "Senha:",
+        input_processors=[PasswordProcessor(char="●")],
+    ).ask()
+    return answer or ""
 
 
 def print_report(title: str, report: DownloadReport) -> None:

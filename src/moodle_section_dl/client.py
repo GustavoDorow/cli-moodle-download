@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 from .errors import AuthenticationError, MoodleDownloadError
 from .models import Activity, DownloadedFile, DownloadReport, SkippedActivity
-from .parser import extract_download_links, parse_section_activities
+from .parser import course_name, extract_download_links, parse_section_activities
 
 _INVALID_FILENAME = re.compile(r"[^\w.()\[\] -]+", re.UNICODE)
 _CONTENT_DISPOSITION_FILENAME = re.compile(
@@ -118,7 +118,8 @@ class MoodleClient:
         title, activities = parse_section_activities(
             course_html, course_url, section_name
         )
-        section_dir = output_dir / safe_filename(title, fallback="secao")
+        course_dir = output_dir / course_directory_name(course_html, course_url)
+        section_dir = course_dir / safe_filename(title, fallback="secao")
         section_dir.mkdir(parents=True, exist_ok=True)
 
         files: list[DownloadedFile] = []
@@ -203,6 +204,17 @@ def safe_filename(value: str, *, fallback: str = "arquivo") -> str:
     value = value.replace("/", "-").replace("\\", "-").strip(" .")
     value = _INVALID_FILENAME.sub("_", value)
     return value[:180].rstrip(" .") or fallback
+
+
+def course_directory_name(course_html: str, course_url: str) -> str:
+    """Cria o nome da pasta da disciplina a partir do título da página."""
+    name = course_name(course_html)
+    if name:
+        hyphenated = re.sub(r"\s+", "-", name.strip())
+        return safe_filename(hyphenated, fallback="curso")
+
+    course_id = re.search(r"(?:[?&]id=)(\d+)", course_url)
+    return f"curso-{course_id.group(1)}" if course_id else "curso"
 
 
 def response_filename(response: requests.Response, activity_name: str) -> str:

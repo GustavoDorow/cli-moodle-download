@@ -9,7 +9,7 @@ def test_main_prompts_for_credentials_when_env_is_missing(tmp_path: Path, monkey
     monkeypatch.delenv("UFSC_USERNAME", raising=False)
     monkeypatch.delenv("UFSC_PASSWORD", raising=False)
     monkeypatch.setattr("builtins.input", lambda prompt: "usuario_digitado")
-    monkeypatch.setattr(cli.getpass, "getpass", lambda prompt: "senha_digitada")
+    monkeypatch.setattr(cli, "prompt_password", lambda: "senha_digitada")
     received: dict[str, str] = {}
 
     class FakeClient:
@@ -34,6 +34,27 @@ def test_main_prompts_for_credentials_when_env_is_missing(tmp_path: Path, monkey
         "username": "usuario_digitado",
         "password": "senha_digitada",
     }
+
+
+def test_password_prompt_masks_each_character_with_a_dot(monkeypatch):
+    received: dict[str, object] = {}
+
+    class FakeQuestion:
+        def ask(self):
+            return "senha_digitada"
+
+    def fake_text(message: str, **kwargs):
+        received.update(message=message, **kwargs)
+        return FakeQuestion()
+
+    monkeypatch.setattr(cli.questionary, "text", fake_text)
+
+    assert cli.prompt_password() == "senha_digitada"
+    assert received["message"] == "Senha:"
+    processors = received["input_processors"]
+    assert isinstance(processors, list)
+    assert len(processors) == 1
+    assert processors[0].char == "●"
 
 
 def test_main_loads_credentials_from_dotenv(tmp_path: Path, monkeypatch):

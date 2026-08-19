@@ -2,6 +2,7 @@ import pytest
 
 from moodle_section_dl.errors import SectionNotFoundError
 from moodle_section_dl.parser import (
+    course_name,
     extract_download_links,
     list_sections,
     parse_section_activities,
@@ -35,6 +36,18 @@ COURSE_HTML = """
   </ul>
 </div>
 """
+
+
+def test_extracts_subject_name_from_course_heading():
+    html = """
+    <header id="page-header">
+      <div class="page-header-headings">
+        <h1>INE5608-04238A (20262) - Análise e Projeto de Sistemas</h1>
+      </div>
+    </header>
+    """
+
+    assert course_name(html) == "Análise e Projeto de Sistemas"
 
 
 def test_lists_and_selects_section_ignoring_accents_and_case():

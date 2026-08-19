@@ -4,6 +4,7 @@ from requests import Response
 
 from moodle_section_dl.client import (
     MoodleClient,
+    course_directory_name,
     response_filename,
     safe_filename,
     unique_target,
@@ -39,6 +40,24 @@ def test_filename_falls_back_to_activity_and_content_type():
 
 def test_safe_filename_blocks_path_traversal():
     assert safe_filename("../../Unidade\\arquivo?.pdf") == "-..-Unidade-arquivo_.pdf"
+
+
+def test_course_directory_uses_subject_name_with_hyphens():
+    html = """
+    <div id="page-header"><h1>
+      INE5608-04238A (20262) - Análise e Projeto de Sistemas
+    </h1></div>
+    """
+    assert course_directory_name(
+        html, "https://presencial.moodle.ufsc.br/course/view.php?id=54910"
+    ) == "Análise-e-Projeto-de-Sistemas"
+
+
+def test_course_directory_falls_back_to_course_id():
+    assert course_directory_name(
+        "<html></html>",
+        "https://presencial.moodle.ufsc.br/course/view.php?id=54910",
+    ) == "curso-54910"
 
 
 def test_unique_target_adds_counter(tmp_path: Path):
@@ -138,6 +157,7 @@ def test_download_section_handles_direct_file_folder_and_interactive_activity(
         "https://moodle.example/pluginfile.php/12/mod_folder/content/0/b.pdf"
     )
     course_html = f"""
+    <div id="page-header"><h1>INE5608 (20262) - Sistemas Operacionais</h1></div>
     <div id="page-course-view"><li class="section">
       <h3 class="sectionname">Unidade 3</h3>
       <div class="activity"><a class="aalink" href="{direct_url}"><span class="instancename">A</span></a></div>
@@ -169,5 +189,9 @@ def test_download_section_handles_direct_file_folder_and_interactive_activity(
 
     assert title == "Unidade 3"
     assert [item.path.name for item in report.files] == ["a.pdf", "b.pdf"]
+    assert all(
+        item.path.parent == tmp_path / "Sistemas-Operacionais" / "Unidade 3"
+        for item in report.files
+    )
     assert [item.path.read_bytes() for item in report.files] == [b"pdf-a", b"pdf-b"]
     assert [item.name for item in report.skipped] == ["Quiz"]

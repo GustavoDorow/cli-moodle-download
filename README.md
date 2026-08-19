@@ -37,7 +37,12 @@ No seletor:
 - `Espaço`: marcar uma ou mais seções;
 - `Enter`: confirmar e baixar.
 
-Os arquivos ficam em `downloads/<nome da seção>/`.
+Os arquivos ficam em
+`downloads/<nome da disciplina>/<nome da seção>/`. Por exemplo:
+
+```text
+downloads/Análise-e-Projeto-de-Sistemas/Unidade 3/
+```
 
 Use o link da disciplina (`/course/view.php?id=...`), não o link de um arquivo
 ou atividade (`/mod/resource/...`, `/mod/quiz/...`).

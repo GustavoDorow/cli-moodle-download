@@ -8,6 +8,7 @@ from .errors import SectionNotFoundError
 from .models import Activity
 
 _WHITESPACE = re.compile(r"\s+")
+_COURSE_PREFIX = re.compile(r"^.+?\s+-\s+(.+)$")
 
 
 def normalized_text(value: str) -> str:
@@ -15,6 +16,27 @@ def normalized_text(value: str) -> str:
     value = unicodedata.normalize("NFKD", value)
     value = "".join(char for char in value if not unicodedata.combining(char))
     return _WHITESPACE.sub(" ", value).strip().casefold()
+
+
+def course_name(html: str) -> str | None:
+    """Extrai do título do curso apenas o nome legível da disciplina."""
+    soup = BeautifulSoup(html, "html.parser")
+    selectors = (
+        "#page-header .page-header-headings h1",
+        ".page-header-headings h1",
+        "#page-header h1",
+        "h1",
+    )
+    for selector in selectors:
+        heading = soup.select_one(selector)
+        if not heading:
+            continue
+        title = _WHITESPACE.sub(" ", heading.get_text(" ", strip=True)).strip()
+        if not title:
+            continue
+        match = _COURSE_PREFIX.match(title)
+        return match.group(1).strip() if match else title
+    return None
 
 
 def _section_title(section: Tag) -> str:
